@@ -1,0 +1,51 @@
+-rust: must, trop performant
+  -> bytecode vm ?
+  -> llvm ?
+  -> compilateur from scratch ? (peut transpiler vers du C par exemple)
+  -> interpréteur ?
+
+
+
+===
+langage perso:
+-éviter "generics + overloading" (trop confus)
+-> OOP ?
+-> que de l'overload ?
+  (les generics très génériques sont plutôt rares, en général on utilise plutôt l'inférence)
+-> pas d'inférence des paramètres ? (!, aucun langage mainstream ne laisse les paramètres non-typés)
+
+
+multiple dispatch:
+transformer en single dispatch ?
+a + b -> a.add(b) = b.add_type_<a>(a)
+
+
+éviter le dispatch tout court ?
+(x.method -> trop dynamique)
+
+héritage -> composition
+-> plus besoin de méthodes virtuelles pour updater les méthodes overridées
+-> types entièrement connus à la compilation (pas de types runtimes)
+-> interfaces: manuelles (comme go) ? sans overloading ?
+(problème: go caca)
+
+
+
+
+interfaces: résolu: traits + objets interfaces statiques
+  (ne pas garder de référence de type sur l'objet initial, laisser le dev se débrouiller avec une vtable et un pointeur this)
+
+
+héritage: ?
+idée:
+struct vec3 {
+  u vec2 extend,
+  z int
+}
+-> récupère avec des delegate inlined le comportement de vec2
+  (tous les traits définits avec vec2 en paramètres sont clonés sur vec3)
+  (les méthodes comme length aussi)
+  (exemple bidon, ici le code serait faux)
+
+-> héritage multiple, composition 
+-> erreur en cas de conflits d'héritages des traits ? ou juste warning et prioriser le dernier

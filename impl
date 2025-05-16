@@ -1,0 +1,12 @@
+lexer:
+https://gist.github.com/cellularmitosis/5b43864dfc4593218130554d3e79a6b2
+
+architecture:
+https://github.com/arkcadea/implementation-of-interpreters
+
+
+
+contraintes de compilation:
+-les méthodes doivent être décrites dans le même fichier que le type
+  (permet de compiler les sizeof)
+-

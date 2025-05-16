@@ -1,0 +1,112 @@
+impl: rust ? (blazingly fast)
+
+target: llvm ? bytecode ?
+choix: bytecode: plus amusant, portable
+  + JIT possible grâce à LLVM plus tard
+
+
+
+====
+
+innovations syntaxiques:
+-décorateurs universels (macros appliquées sur la ligne)
+-macros + blocs python ?
+  (à voir, et à définir en détail pour pouvoir coexister avec les accolades)
+
+
+
+signals ?
+when health = 0 {
+  //
+}
+
+
+
+inspirations:
+-nim: choix de syntaxe
+  (x.f, f(x), f x, f\n\tx, f{ x })
+
+(pas un truc ultra-extensible et ultra-flexible, juste du sucre syntaxique)
+(permet au dev de prendre la présentation qu'il trouve la plus naturelle)
+(pour les macros, voir plus tard, a priori la syntaxe exacte dépendra)
+
+
+
+=====
+
+résolution des imports:
+-méthode ocaml -> pas de référence circulaire possible -> non
+-C++: ignorer le code et créer les symboles avant de les définir
+  -> à faire automatiquement
+  passe 1: lister les éléments top level
+  passe 2: embarquer dans l'AST les types, fonctions,...
+  passe 3: 
+
+problème: imports inter-dépendants
+  -> doit glob() tous les fichiers impliqués dans un ensemble
+  -> pour travailler incrémentalement: ignorer plus que l'AST des autres modules
+    (ne pas compiler tout le reste)
+    (attention: ne pas recompiler pour rien ?)
+
+
+
+syntaxe: chemins absolus et relatifs ?
+import lib/fs.*
+import lib/fs/*
+(fs.extension peut être un fichier)
+
+
+
+
+
+=====
+
+dans tous les cas:
+GC -> besoin d'un algo pour allouer des valeurs et envoyer des références partout jusqu'à ce que la référence soit inutilisée
+  C ? rust ? c++ ?
+
+choix pour GC:
+-utiliser l'allocateur rust (juste besoin de gérer les références, très unsafe car pas possible de garantir les lifetimes)
+-Arc
+-squatter un langage avec GC
+-compacting ?
+  (comme la jvm, pointeurs virtuels et table globale de pointeurs, pour pouvoir réarranger la mémoire comme on veu)
+  avantage: cache super-puissant
+  désavantage: indirection des pointeurs
+  avantage: nursery trivialle (peut déplacer comme on veut)
+  désavantage: comment gérer le tableau global de pointeurs ?
+    (besoin de le réagrandir quand il se passe un truc)
+    (censé être "difficile à implémenter")
+
+
+comparaisons:
+-mini-heap:
+  -pré-alloué -> aussi rapide que la stack en rust
+  -complexe: soit on peut déplacer les valeurs et utiliser l'indirection pour retourner au bon endroit, soit on doit pouvoir modifier les addresses des références
+    remplacer les variables (pointeurs) par des boxes ?
+      (modifier la valeur dans la box pour changer l'adresse d'une variable)
+      (la box elle-même est dans le heap -> problème récursif)
+
+
+
+attention: types effacés au runtime -> pas d'information de type
+-> pointeurs vs valeurs: à différencier avec un flag
+  ex: 1 bit qui sert de flag
+alt: garder des informations de type au runtime, mais pas utilisés pour typage dynamique
+  (seulement pour que le GC puisse inspecter les types)
+alt: GC conservateur ? (traite tous les entiers comme des pointeurs)
+
+
+algo gc utilisé: mark & sweep tricolor
+
+
+choix funs:
+-laisser le contrôle du gc au dev (peut ne pas utiliser de GC en ne l'activant jamais)
+-
+
+
+
+
+
+
+

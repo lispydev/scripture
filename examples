@@ -1,0 +1,68 @@
+
+structures:
+
+# skip pour l'instant, trop compliqué à parser
+struct vec2:
+  x: int
+  y: int
+
+# skip pour l'instant, trop compliqué à parser
+struct vec2
+  x int
+  y int
+
+# implémenter ça
+struct vec2 {
+  x int,
+  y int
+}
+
+
+interfaces:
+
+interface sizeable(t) {
+trait sizeable(t) {
+  fn length(t) int
+}
+
+implement sizeable(vec2) {
+  fn length(u vec2) = (u.x ** 2 + u.y ** 2) ** 0.5
+}
+
+sizeable.length(u)  // function call
+  == length(sizeable)(u) ?
+sizeable(u).length()  // virtual method call after building the interface
+  == length(sizeable(u)) ?
+
+
+static (not virtual) methods:
+
+implement int {
+  fn absolute(x int) {
+    if x >= 0 {
+      return x
+    }
+    else {
+      return -x
+    }
+  }
+}
+
+
+operator overload:
+
+implement(t) add(sizeable(t), sizeable(t), int) {
+  fn add(a sizeable(t), b sizeable(t)) int {
+    return length(a) + length(b)
+  }
+}
+
+
+inheritance:
+
+struct button {
+  widget: inherit widget
+  enabled: bool
+}
+
+
