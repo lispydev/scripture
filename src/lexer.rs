@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use num::BigInt;
 use num::bigint::Sign;
 use regex::Regex;
+use crate::lexer::Token::Whitespace;
 
 #[derive(Debug)]
 pub enum Token {
@@ -25,18 +26,15 @@ pub struct TokenSource {
     end: usize,
 }
 
-fn next_token(text: &str) -> Option<(TokenSource, &str)> {
+fn next_token(text: &str) -> Option<(Token, usize, &str)> {
     for (regex, processor) in regexes.iter() {
         match Regex::find(regex, text) {
             Some(x) => {
+                let length = x.end();
                 let match_text = x.as_str();
                 let match_start = x.start();
                 let match_end = x.end();
-                return Some((TokenSource {
-                    token: processor(match_text),
-                    start: match_start,
-                    end: match_end,
-                }, &text[match_end..]))
+                return Some((processor(match_text), length, &text[match_end..]))
             },
             None => {}
         }
@@ -45,12 +43,19 @@ fn next_token(text: &str) -> Option<(TokenSource, &str)> {
 }
 
 pub fn tokenize(text: &str) -> Vec<TokenSource> {
+    let mut position = 0;
     let mut current_text = text;
     let mut tokens: Vec<TokenSource> = Vec::new();
     while true {
         match next_token(current_text) {
-            Some((token, text)) => {
+            Some((token, length, text)) => {
                 current_text = text;
+                let token = TokenSource {
+                    token,
+                    start: position,
+                    end: position + length,
+                };
+                position += length;
                 tokens.push(token);
             }
             None => {
@@ -82,6 +87,14 @@ lazy_static! {
                 bigint = -bigint;
             }
             Token::Int(bigint)
+        }),
+        
+        (Regex::new("^\\(").unwrap(), | text | {
+            Token::OpenParen
+        }),
+        
+        (Regex::new("^(\\s)+").unwrap(), | text | {
+            Whitespace(text.to_string())
         })
     ];
 }
