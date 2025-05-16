@@ -3,35 +3,85 @@ use num::BigInt;
 use num::bigint::Sign;
 use regex::Regex;
 
-enum Token {
+#[derive(Debug)]
+pub enum Token {
     Int(BigInt),
     Float(f64),
+    String(String),
+    OpenParen,
+    CloseParen,
+    OpenBrace,
+    CloseBrace,
+    OpenBracket,
+    CloseBracket,
+    Whitespace(String),
+    Word(String),
 }
 
-fn next_token(text: &str) -> Option<(Token, &str)> {
+#[derive(Debug)]
+pub struct TokenSource {
+    token: Token,
+    start: usize,
+    end: usize,
+}
+
+fn next_token(text: &str) -> Option<(TokenSource, &str)> {
+    for (regex, processor) in regexes.iter() {
+        match Regex::find(regex, text) {
+            Some(x) => {
+                let match_text = x.as_str();
+                let match_start = x.start();
+                let match_end = x.end();
+                return Some((TokenSource {
+                    token: processor(match_text),
+                    start: match_start,
+                    end: match_end,
+                }, &text[match_end..]))
+            },
+            None => {}
+        }
+    }
     None
 }
 
-fn tokenize(text: &str) -> Vec<Token> {
-    vec![]
+pub fn tokenize(text: &str) -> Vec<TokenSource> {
+    let mut current_text = text;
+    let mut tokens: Vec<TokenSource> = Vec::new();
+    while true {
+        match next_token(current_text) {
+            Some((token, text)) => {
+                current_text = text;
+                tokens.push(token);
+            }
+            None => {
+                break
+            }
+        }
+    }
+
+    tokens
 }
 
 
 lazy_static! {
     static ref regexes: Vec<(Regex, fn(&str) -> Token)> = vec![
-        (Regex::new("^([0-9]+)$").unwrap(), |integer_text: &str| {
-            let sign_char = integer_text.chars().nth(0).unwrap();
-            let sign = match sign_char{
-                '+' => Sign::Plus,
-                '-' => Sign::Minus,
-                _ => panic!("Invalid sign")
+        (Regex::new("^([0-9]+)").unwrap(), |integer_text: &str| {
+            let first_char = integer_text.chars().nth(0).unwrap();
+            let (sign, absolute_text) = match first_char {
+                '+' => (Sign::Plus, &integer_text[1..]),
+                '-' => (Sign::Minus, &integer_text[1..]),
+                _ => (Sign::Plus, integer_text),
             };
-            let integer_absolute_text = &integer_text[1..];
             let mut digits = vec![];
-            for ch in integer_absolute_text.chars() {
-                digits.push(ch as u32)
+            for ch in absolute_text.chars() {
+                //digits.push((ch as u8) - 48)
+                digits.push(ch as u8)
             }
-            Token::Int(BigInt::new(sign, digits))
+            let mut bigint = BigInt::parse_bytes(digits.as_slice(), 10).unwrap();
+            if sign == Sign::Minus {
+                bigint = -bigint;
+            }
+            Token::Int(bigint)
         })
     ];
 }
