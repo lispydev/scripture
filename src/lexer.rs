@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use num::BigInt;
 use num::bigint::Sign;
 use regex::Regex;
-use crate::lexer::Token::Whitespace;
+use crate::lexer::Token::{CloseBracket, OpenBrace, OpenBracket, Whitespace};
 
 #[derive(Debug)]
 pub enum Token {
@@ -16,7 +16,9 @@ pub enum Token {
     OpenBracket,
     CloseBracket,
     Whitespace(String),
-    Word(String),
+    Identifier(String),
+    Keyword(String),
+    Operator(String),
 }
 
 #[derive(Debug)]
@@ -69,6 +71,11 @@ pub fn tokenize(text: &str) -> Vec<TokenSource> {
 
 
 lazy_static! {
+    
+    static ref keywords: Vec<&'static str> = vec![
+        "test"
+    ];
+    
     static ref regexes: Vec<(Regex, fn(&str) -> Token)> = vec![
         (Regex::new("^([0-9]+)").unwrap(), |integer_text: &str| {
             let first_char = integer_text.chars().nth(0).unwrap();
@@ -93,8 +100,41 @@ lazy_static! {
             Token::OpenParen
         }),
         
+        (Regex::new("^\\)").unwrap(), | text | {
+            Token::CloseParen
+        }),
+        
         (Regex::new("^(\\s)+").unwrap(), | text | {
-            Whitespace(text.to_string())
+            Token::Whitespace(text.to_string())
+        }),
+        
+        (Regex::new("^\\{").unwrap(), | text | {
+            Token::OpenBrace
+        }),
+        
+        (Regex::new("^\\}").unwrap(), | text | {
+            Token::CloseBrace
+        }),
+        
+        (Regex::new("^\"([^\"]*)\"").unwrap(), | text | {
+            Token::String(text.to_string())
+        }),
+        
+        (Regex::new("\\[").unwrap(), |text| {
+            OpenBracket
+        }),
+        
+        (Regex::new("\\]").unwrap(), |text| {
+            CloseBracket
+        }),
+        
+        (Regex::new("^([a-zA-Z]*[a-zA-Z0-9]+)").unwrap(), | text | {
+            for kw in keywords.iter() {
+                if text == *kw {
+                    return Token::Keyword(text.to_string())
+                }
+            }
+            return Token::Identifier(text.to_string());
         })
     ];
 }
