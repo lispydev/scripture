@@ -28,17 +28,30 @@ pub struct TokenSource {
     end: usize,
 }
 
+
+enum Parser {
+    Regex(Regex, fn(&str) -> Token),
+    Function(fn(&str) -> Option<(Token, &str)>),
+}
+
 fn next_token(text: &str) -> Option<(Token, usize, &str)> {
-    for (regex, processor) in regexes.iter() {
-        match Regex::find(regex, text) {
-            Some(x) => {
-                let length = x.end();
-                let match_text = x.as_str();
-                let match_start = x.start();
-                let match_end = x.end();
-                return Some((processor(match_text), length, &text[match_end..]))
-            },
-            None => {}
+    for parser in regexes.iter() {
+        match parser {
+            Parser::Regex(regex, processor) => {
+                match Regex::find(regex, text) {
+                    Some(x) => {
+                        let length = x.end();
+                        let match_text = x.as_str();
+                        let match_start = x.start();
+                        let match_end = x.end();
+                        return Some((processor(match_text), length, &text[match_end..]))
+                    },
+                    None => {}
+                }
+            }
+            Parser::Function(f) => {
+                //
+            }
         }
     }
     None
@@ -71,13 +84,20 @@ pub fn tokenize(text: &str) -> Vec<TokenSource> {
 
 
 lazy_static! {
-    
+
     static ref keywords: Vec<&'static str> = vec![
-        "test"
+        "if",
+        "fn",
     ];
-    
-    static ref regexes: Vec<(Regex, fn(&str) -> Token)> = vec![
-        (Regex::new("^([0-9]+)").unwrap(), |integer_text: &str| {
+
+    static ref regexes: Vec<Parser> = vec![
+        
+        Parser::Regex(Regex::new("^([0-9]*[eE][1-9][0-9]*|(([1-9][0-9]*\\.)|(\\.[0-9]+))([0-9]*)?([eE][\\-\\+]?[1-9][0-9]*)?)").unwrap(), | text | {
+            let f = text.parse::<f64>().unwrap();
+            Token::Float( f )
+        }),
+        
+        Parser::Regex(Regex::new("^([0-9]+)").unwrap(), |integer_text: &str| {
             let first_char = integer_text.chars().nth(0).unwrap();
             let (sign, absolute_text) = match first_char {
                 '+' => (Sign::Plus, &integer_text[1..]),
@@ -95,46 +115,52 @@ lazy_static! {
             }
             Token::Int(bigint)
         }),
+
         
-        (Regex::new("^\\(").unwrap(), | text | {
+
+        Parser::Regex(Regex::new("^\\(").unwrap(), | text | {
             Token::OpenParen
         }),
-        
-        (Regex::new("^\\)").unwrap(), | text | {
+
+        Parser::Regex(Regex::new("^\\)").unwrap(), | text | {
             Token::CloseParen
         }),
-        
-        (Regex::new("^(\\s)+").unwrap(), | text | {
+
+        Parser::Regex(Regex::new("^(\\s)+").unwrap(), | text | {
             Token::Whitespace(text.to_string())
         }),
-        
-        (Regex::new("^\\{").unwrap(), | text | {
+
+        Parser::Regex(Regex::new("^\\{").unwrap(), | text | {
             Token::OpenBrace
         }),
-        
-        (Regex::new("^\\}").unwrap(), | text | {
+
+        Parser::Regex(Regex::new("^\\}").unwrap(), | text | {
             Token::CloseBrace
         }),
-        
-        (Regex::new("^\"([^\"]*)\"").unwrap(), | text | {
+
+        Parser::Regex(Regex::new("^\"([^\"]*)\"").unwrap(), | text | {
             Token::String(text.to_string())
         }),
-        
-        (Regex::new("\\[").unwrap(), |text| {
+
+        Parser::Regex(Regex::new("\\[").unwrap(), |text| {
             OpenBracket
         }),
-        
-        (Regex::new("\\]").unwrap(), |text| {
+
+        Parser::Regex(Regex::new("\\]").unwrap(), |text| {
             CloseBracket
         }),
-        
-        (Regex::new("^([a-zA-Z]*[a-zA-Z0-9]+)").unwrap(), | text | {
+
+        Parser::Regex(Regex::new("^([a-zA-Z]*[a-zA-Z0-9]+)").unwrap(), | text | {
             for kw in keywords.iter() {
                 if text == *kw {
                     return Token::Keyword(text.to_string())
                 }
             }
             return Token::Identifier(text.to_string());
+        }),
+
+        Parser::Regex(Regex::new("^\\=").unwrap(), | text | {
+            Token::Operator("=".to_string())
         })
     ];
 }
